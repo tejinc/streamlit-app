@@ -1,0 +1,6 @@
+**/tmp.txt
+**/tmp.json
+**/*.swo
+data/
+notebooks/
+**/__pycache__
