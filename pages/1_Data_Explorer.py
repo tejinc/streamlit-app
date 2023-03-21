@@ -6,7 +6,7 @@ import numpy as np
 from streamlit import session_state as ss
 import plotly.express as px
 import streamlit.components.v1 as components
-from utils import load, setting, train_xgboot
+from utils import load, setting, train_xgboot, data_filter
 
 ##############################################################################
 # Workaround for the limited multi-threading support in matplotlib.
@@ -35,10 +35,15 @@ st.title("Data Explorer")
 
 st.markdown(
     """
-    ### Desired functions for this app:
-    - Show table
-    - Make 1/2/3-dimensional scatter plots of chosen quantities
-    - Make 1/2-dimensional histograms of chosen quantities
+    ### Instruction
+    This app takes a file, and encode each categorical data using an OrdinalEncoder.
+    The user could then specify which data -- encoded or original -- to make simple plots. 
+    The user could select up to 3 features for plotting, 
+    - For one or two features, a user could make histogram
+    - For two or three features, a user could make scatter plot
+
+    The options to make a histogram or scatter plot will become dynamically available. 
+    Finally, the user could also perform PCA on the formated data. 
 """
 )
 
@@ -61,102 +66,64 @@ with st.sidebar:
     if df is not None:
         options = df.select_dtypes(include=np.number).columns.tolist() if select_numeric else list(df.columns)
     variables = st.sidebar.multiselect("Select up to 3 variables from list", options=options, max_selections=3)
+    with st.expander("Plot options"):
+        marker_size = st.select_slider("Marker size", value=1, options=np.arange(0,10,0.5))
 
 
+main_col1, main_col2 = st.columns([3,1])
 
-with st.expander("Make Histogram (1 or 2 D)"):
-    if len(variables) in [1,2]:
-        if st.button("Make Histograms"):
-            fig, ax = plt.subplots()
+with main_col2:
+    df_filtered=data_filter.data_filter(df)
+
+with main_col1:
+    with st.expander("Make Histogram (1 or 2 D)"):
+        sel_options_num = dict()
+        sel_options_cat = dict()
+        if len(variables) in [1,2]:
+            fig = None
             if len(variables) == 1:
                 x = variables[0]
-                with _lock:
-                    ax.hist(df[x])
-                ax.set_xlabel(x)
-                ax.set_ylabel("count")
+                fig = px.histogram(df_filtered, x=x)
+            elif len(variables) == 2:
+                x,y = variables
+                fig = px.density_heatmap(df_filtered, x=x, y=y, color_continuous_scale="Viridis" )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.write("Histogram will show up automatically")
+
+
+
+    with st.expander("Make Scatter Plot (2 or 3 D)"):
+        if len(variables) > 1:
+            fig = None
             if len(variables) == 2:
                 x, y = variables
-                with _lock:
-                    hh = ax.hist2d(df[x], df[y], cmap='viridis')
-                ax.set_xlabel(x)
-                ax.set_ylabel(y)
-                fig.colorbar(hh[3], ax=ax)
-            st.write(fig)
-
-
-
-with st.expander("Make Scatter Plot (2 or 3 D)"):
-    if len(variables) > 1:
-        if st.button("Make Scatter Plot"):
-            fig, ax = plt.subplots()
-            if len(variables) == 2:
-                x, y = variables
-                with _lock:
-                    ax.plot(df[x], df[y],marker="o", linestyle='None')
-                ax.set_xlabel(x)
-                ax.set_ylabel(y)
+                fig = px.scatter(df_filtered, x=x,y=y)
             if len(variables) == 3:
                 x, y, z = variables
-                ax = fig.add_subplot(111, projection='3d')
-                with _lock:
-                    ax.plot(df[x], df[y], df[z], marker="o",linestyle='None')
-                ax.set_xlabel(x)
-                ax.set_ylabel(y)
-                ax.set_zlabel(z)
-            st.write(fig)
-
-
-with st.expander("Principal Component Analysis"):
-    if ss["df"] is not None:
-
-        pp = train_xgboot.ProcessData()
-        X, y = pp.preprocess(ss["df"], True)
-        col1, col2 = st.columns(2)
-        n_components = col1.select_slider("Select No. of Principal Component", options=range(2,len(X.columns)+1 ), value = len(X.columns)) 
-        process_pca = col2.button("Run PCA")
-        if process_pca:
-
-            pca = decomposition.PCA(n_components=n_components)
-            pca.fit(X)
-            X = pca.transform(X)
-            y = np.choose(y, [1, 2, 0]).astype(float)
-            fig = px.scatter_3d(x=X[:,0], y=X[:,1], z=X[:,2], color=y,
-                                opacity=.5)
-            st.plotly_chart(fig)
-
-            #st.write(fig)
-
-plt.show()
-        
+                fig = px.scatter_3d(df_filtered,x=x,y=y,z=z)
+            fig.update_traces(marker_size = marker_size)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.write("Scatter plot will show up automatically")
 
 
 
-#if df is not None:
-#     df = loader.extension_parser( input_file )
-#     #variable selection
-#     options = ["None"]+list(df.columns)
-#     var_x = st.sidebar.selectbox("Select x1 from list",
-#             options )
+    with st.expander("Principal Component Analysis"):
+        if ss["df"] is not None:
+            pp = train_xgboot.ProcessData()
+            X, y = pp.preprocess(ss["df"], True)
+            col1, colm, col2 = st.columns([3,1,1])
+            n_components = col1.select_slider("Select No. of Principal Component", options=range(2,len(X.columns)+1 ), value = len(X.columns)) 
+            process_pca = col2.button("Run PCA")
 
-#     var_y = st.sidebar.selectbox("Select x2 from list",
-#            options ) 
-
-
-#     plot_type="None"
-#     with st.sidebar.expander("Select histogram types (required)"):
-#         plot_type = st.selectbox("Select plot type", ["None","Scatter","Histogram"])
-#         if var_x != "None":
-#             if df[var_x].dtype.kind in 'iufc':
-#                 x_range= st.slider( "x range", value=(min(df[var_x]), max(df[var_x]) ) )
-#         if var_y != "None":
-#             if df[var_y].dtype.kind in 'iufc':
-#                 y_range= st.slider( "y range", value=(min(df[var_y]), max(df[var_y]) ) )
-
-#     drawPlot(df,var_x,var_y, plot_type)
-
-# st.write(df)
-
-    
-
-
-
+            if process_pca:
+                pca = decomposition.PCA(n_components=n_components)
+                pca.fit(X)
+                X = pca.transform(X)
+                y = np.choose(y, [1, 2, 0]).astype(float)
+                fig = px.scatter_3d(x=X[:,0], y=X[:,1], z=X[:,2], color=y,
+                                    opacity=.5)
+                #print(col1._html)
+                fig.update_traces(marker_size = marker_size)
+                st.plotly_chart(fig, use_container_width=True)

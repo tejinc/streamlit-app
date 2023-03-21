@@ -35,7 +35,7 @@ setting.initialize_setting()
 st.set_page_config(
     page_title="ML Training",
     page_icon="📊",
-    layout="wide"
+    #layout="wide"
 )
 st.title("ML Training")
 
@@ -154,6 +154,7 @@ with tab1:
             ac1.pyplot(ss["fig1"])
             ac2.pyplot(ss["fig2"])
 
+            ac1, ac2 = st.columns(2)
             img1 = io.BytesIO()
             fig1.savefig(img1, format='pdf')
             img2 = io.BytesIO()

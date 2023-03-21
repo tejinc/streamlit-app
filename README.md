@@ -55,3 +55,15 @@ Once a model is trained, ROC and CM plots will appear here, and users could down
 Users could inspect the original, the preprocessed, and the splitted data tables.
 ### Main page: Parameter Viewer
 Users could inspect some of the ML model parameters
+
+
+# Running in Docker
+1) Build the docker image with 
+> docker build . --network=host -t streamlit-app
+
+2) Run the docker container:
+>docker run -it --rm -p 4546:4545 streamlit-app
+
+The command will create and run a docker container built from `streamlit-app`, and expose the docker internal port 4545 to external port 4546.
+
+Users can then open their browser and view the app at `http://localhost:4546`.

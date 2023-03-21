@@ -28,11 +28,13 @@ def load_file(uploader_label = "Please upload csv or xslx files"):
     if ss["df"] is not None and ss["input_file"] is not None:
         st.success(f"%s has been uploaded!"%(ss["input_file"].name) )
 
-def unload_file():
-    del ss["input_file"]
-    del ss["df"]
-    ss["input_file"] = None
-    ss["df"] = None
+# These are not implemented in the 
+# App yet
+# def unload_file():
+#     del ss["input_file"]
+#     del ss["df"]
+#     ss["input_file"] = None
+#     ss["df"] = None
 
-def unload_file_button(label="Delete File"):
-    st.button(label, on_click=unload_file)
+# def unload_file_button(label="Delete File"):
+#     st.button(label, on_click=unload_file)

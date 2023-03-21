@@ -1,2 +1,5 @@
 [server]
 port = 4545
+
+[browser]
+gatherUsageStats = false
