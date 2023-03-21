@@ -26,7 +26,7 @@ setting.initialize_setting()
 
 #title of the app
 st.set_page_config(
-    page_title="ML Training",
+    page_title="Data Explorer",
     page_icon="📊",
     layout="wide"
 )
@@ -42,7 +42,12 @@ st.markdown(
     - For one or two features, a user could make histogram
     - For two or three features, a user could make scatter plot
 
-    The options to make a histogram or scatter plot will become dynamically available. 
+    
+    The histogram and scatter plots will automatically update. The user could
+    apply additional filtering using the control panel on the right. 
+    - Numeric columns: select a range of data
+    - Categorical columns: select categories to be kept, default to true for all categories.
+
     Finally, the user could also perform PCA on the formated data. 
 """
 )
@@ -68,22 +73,26 @@ with st.sidebar:
     variables = st.sidebar.multiselect("Select up to 3 variables from list", options=options, max_selections=3)
     with st.expander("Plot options"):
         marker_size = st.select_slider("Marker size", value=1, options=np.arange(0,10,0.5))
+        opacity = st.slider("Marker opacity", value=1., min_value=0., max_value=1.)
 
 
 main_col1, main_col2 = st.columns([3,1])
 
 with main_col2:
+    # select color column:
+    color_col = st.selectbox("Select color column:", options=["None"]+ list(df.columns))
+    color_col = None if color_col == "None" else color_col
     df_filtered=data_filter.data_filter(df)
 
 with main_col1:
-    with st.expander("Make Histogram (1 or 2 D)"):
+    with st.expander("Make Histogram (1 or 2 D)", expanded =(len(variables) in [1,2])):
         sel_options_num = dict()
         sel_options_cat = dict()
         if len(variables) in [1,2]:
             fig = None
             if len(variables) == 1:
                 x = variables[0]
-                fig = px.histogram(df_filtered, x=x)
+                fig = px.histogram(df_filtered, x=x,color=color_col)
             elif len(variables) == 2:
                 x,y = variables
                 fig = px.density_heatmap(df_filtered, x=x, y=y, color_continuous_scale="Viridis" )
@@ -93,15 +102,19 @@ with main_col1:
 
 
 
-    with st.expander("Make Scatter Plot (2 or 3 D)"):
+    with st.expander("Make Scatter Plot (2 or 3 D)", expanded = (len(variables)>1)):
         if len(variables) > 1:
             fig = None
             if len(variables) == 2:
                 x, y = variables
-                fig = px.scatter(df_filtered, x=x,y=y)
+                fig = px.scatter(df_filtered, x=x,y=y, color=color_col, opacity=opacity,
+                                 color_continuous_scale="Viridis" , color_discrete_sequence=px.colors.qualitative.Vivid)
             if len(variables) == 3:
                 x, y, z = variables
-                fig = px.scatter_3d(df_filtered,x=x,y=y,z=z)
+                fig = px.scatter_3d(df_filtered,x=x,y=y,z=z, color=color_col, 
+                                    opacity=opacity,
+                                    color_continuous_scale="Viridis", 
+                                    color_discrete_sequence=px.colors.qualitative.Vivid)
             fig.update_traces(marker_size = marker_size)
             st.plotly_chart(fig, use_container_width=True)
         else:
@@ -123,7 +136,7 @@ with main_col1:
                 X = pca.transform(X)
                 y = np.choose(y, [1, 2, 0]).astype(float)
                 fig = px.scatter_3d(x=X[:,0], y=X[:,1], z=X[:,2], color=y,
-                                    opacity=.5)
+                                    opacity=opacity)
                 #print(col1._html)
                 fig.update_traces(marker_size = marker_size)
                 st.plotly_chart(fig, use_container_width=True)

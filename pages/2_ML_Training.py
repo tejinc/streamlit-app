@@ -178,12 +178,12 @@ with tab2:
             st.dataframe(ss["formated_df"])
     with st.expander("Display split data"):
         st.write("Training sample:")
-        tc1,tc2 = st.columns(2)
+        tc1,tc2 = st.columns([3,1])
         tc1.write(ss["X_train"]) 
         tc2.write(ss["y_train"]) 
 
         st.write("Test sample:")
-        tc1,tc2 = st.columns(2)
+        tc1,tc2 = st.columns([3,1])
         tc1.write(ss["X_test"])
         tc2.write(ss["y_test"])
 
